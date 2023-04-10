@@ -1,0 +1,55 @@
+from tkinter import *
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import os
+
+# Generate a random key for symmetric encryption
+key = os.urandom(32)  # 256-bit key for AES-256
+
+# Function to pad the plaintext to a multiple of 16 bytes (AES block size)
+def pad(text):
+    length = 16 - (len(text) % 16)
+    return text + bytes([length]) * length
+
+# Function to perform encryption
+def encrypt_text():
+    text = input_text.get("1.0", END).encode()
+    padded_text = pad(text)
+    iv = os.urandom(16)  # Generate a random initialization vector
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    encrypted_text = iv + encryptor.update(padded_text) + encryptor.finalize()
+    output_text.delete("1.0", END)
+    output_text.insert(END, encrypted_text.hex())
+
+# Function to perform decryption
+def decrypt_text():
+    encrypted_text = bytes.fromhex(input_text.get("1.0", END))
+    iv = encrypted_text[:16]  # Get the initialization vector from the encrypted text
+    encrypted_data = encrypted_text[16:]
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+    output_text.delete("1.0", END)
+    output_text.insert(END, decrypted_data[:-decrypted_data[-1]].decode())
+
+# Create a GUI window
+window = Tk()
+window.title("Symmetric Encryption")
+
+# Create input and output text boxes
+input_text = Text(window, height=10, width=50)
+input_text.grid(row=0, column=0, padx=10, pady=10)
+
+output_text = Text(window, height=10, width=50)
+output_text.grid(row=1, column=0, padx=10, pady=10)
+
+# Create encryption and decryption buttons
+encrypt_button = Button(window, text="Encrypt", command=encrypt_text)
+encrypt_button.grid(row=2, column=0, padx=10, pady=10)
+
+decrypt_button = Button(window, text="Decrypt", command=decrypt_text)
+decrypt_button.grid(row=3, column=0, padx=10, pady=10)
+
+# Run the GUI window
+window.mainloop()
